@@ -1,28 +1,82 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8">
-  <title>跳转中...</title>
-  <!-- 加载配置文件 -->
-  <script src="js/redirect-config.js"></script>
-  <!-- 动态设置 Meta 跳转 -->
-  <script>
-    // 设置 meta 刷新
-    const metaTag = document.createElement('meta');
-    metaTag.httpEquiv = "refresh";
-    metaTag.content = `${redirectConfig.delay}; url=${redirectConfig.targetUrl}`;
-    document.head.appendChild(metaTag);
-    
-    // JavaScript 跳转
-    window.location.href = redirectConfig.targetUrl;
-  </script>
+    <meta charset="utf-8">
+    <title>跳转中...</title>
+    <!-- 动态获取跳转链接 -->
+    <script>
+        // 强制禁用浏览器缓存
+        const CACHE_BUSTER = '?_t=' + Date.now();
+
+        // 配置参数
+        const CONFIG = {
+            url: "http://154.37.220.132/ym/ym.txt",
+            retry: 3,          // 失败重试次数
+            timeout: 5000      // 请求超时时间（毫秒）
+        };
+
+        // 执行跳转逻辑
+        (async function() {
+            let targetUrl = "";
+            
+            try {
+                // 使用 fetch + AbortController 实现超时控制
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), CONFIG.timeout);
+
+                const response = await fetch(CONFIG.url + CACHE_BUSTER, {
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                
+                targetUrl = (await response.text()).trim();
+                if (!targetUrl) throw new Error("Empty redirect URL");
+            } catch (error) {
+                console.error(`[Error] ${error.message}`);
+                // 失败时使用默认备选链接
+                targetUrl = "https://备用网址.com"; 
+            }
+
+            // 双重跳转保障
+            const meta = document.createElement('meta');
+            meta.httpEquiv = "refresh";
+            meta.content = `0; url=${targetUrl}`;
+            document.head.appendChild(meta);
+            
+            window.location.href = targetUrl;
+        })();
+    </script>
 </head>
 <body>
-  <p>如果未自动跳转，请 <a id="manualRedirect">点击此处</a>。</p>
-  
-  <!-- 动态更新链接 -->
-  <script>
-    document.getElementById('manualRedirect').href = redirectConfig.targetUrl;
-  </script>
+    <noscript>
+        <!-- 无JavaScript备用方案 -->
+        <p>请启用JavaScript或<a href="http://154.37.220.132/ym/ym.txt">手动获取链接</a></p>
+    </noscript>
+    
+    <!-- 可视化加载状态 -->
+    <div style="text-align: center; margin-top: 50px;">
+        <h2>正在获取最新链接...</h2>
+        <div class="loader"></div>
+        <p>如长时间未跳转，请<a href="#" onclick="location.reload()">点击重试</a></p>
+    </div>
+
+    <style>
+        .loader {
+            border: 5px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 5px solid #3498db;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
 </body>
 </html>
