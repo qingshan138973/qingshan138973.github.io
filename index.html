@@ -1,66 +1,64 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <meta charset="utf-8">
-    <title>实时跳转系统</title>
+    <title>Redirecting...</title>
     <script>
-        (() => {
-            // 调试模式开关（true时显示详细日志）
-            const DEBUG_MODE = true;
-            const API_URL = `http://154.44.25.166/ym/ym.php?_=${Date.now()}`;
-
-            function log(...args) {
-                if(DEBUG_MODE) console.log('[DEBUG]', ...args);
-            }
-
-            fetch(API_URL, {
-                cache: 'no-store',
-                headers: { 'Cache-Control': 'no-cache' }
-            })
+        // 添加时间戳参数防止缓存
+        const timestamp = new Date().getTime();
+        
+        // 获取目标URL文件，并添加时间戳防止缓存
+        fetch(`target-url.txt?t=${timestamp}`)
             .then(response => {
-                log('收到响应:', response);
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                const contentType = response.headers.get('content-type');
-                if (!contentType.includes('application/json')) {
-                    throw new Error('无效的JSON响应');
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
                 }
-                return response.json();
+                return response.text();
             })
-            .then(data => {
-                log('解析数据:', data);
-                const url = data.data?.trim();
-                if (data.code !== 1 || !isValidUrl(url)) {
-                    throw new Error('接口数据异常');
+            .then(url => {
+                // 去除可能的空白字符
+                url = url.trim();
+                
+                // 验证URL格式
+                if (/^https?:\/\/.+/i.test(url)) {
+                    // 立即跳转
+                    window.location.replace(url);
+                } else {
+                    document.body.innerHTML = '<h1>Invalid URL in target-url.txt</h1>';
+                    console.error('Invalid URL format in target-url.txt');
                 }
-                log('即将跳转至:', url);
-                window.location.replace(url);
             })
             .catch(error => {
-                log('发生错误:', error);
-                document.body.innerHTML = `
-                    <h3 style="color:red">错误：${error.message}</h3>
-                    <button onclick="window.location.reload(true)">重试</button>
-                `;
+                document.body.innerHTML = '<h1>Error loading redirect URL</h1>';
+                console.error('Error fetching target URL:', error);
             });
-
-            function isValidUrl(url) {
-                try {
-                    new URL(url);
-                    return true;
-                } catch(e) {
-                    return false;
-                }
-            }
-        })();
     </script>
 </head>
 <body>
-    <div style="text-align: center; margin-top: 100px;">
-        <div class="spinner"></div>
-        <p>正在获取最新链接...</p>
-    </div>
+    <noscript>
+        <h1>JavaScript is required for this redirect to work.</h1>
+        <p>Please enable JavaScript or visit the target URL directly.</p>
+    </noscript>
+    
+    <h1>Redirecting...</h1>
+    <p>If you are not redirected automatically, <a id="manualLink" href="#">click here</a>.</p>
+    
+    <script>
+        // 为手动链接添加相同的跳转逻辑
+        document.getElementById('manualLink').addEventListener('click', function(e) {
+            e.preventDefault();
+            const timestamp = new Date().getTime();
+            fetch(`target-url.txt?t=${timestamp}`)
+                .then(response => response.text())
+                .then(url => {
+                    window.location.href = url.trim();
+                });
+        });
+    </script>
 </body>
 </html>
