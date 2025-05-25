@@ -1,23 +1,28 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="utf-8">
-    <title>跳转中...</title>
-    <!-- 强制不缓存设置 -->
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
-    <!-- 双重跳转保障：Meta 刷新 + JavaScript -->
-    <!-- 注意URL中的重复https://已经移除，并添加了防止缓存的时间戳参数 -->
-    <meta http-equiv="refresh" content="0; url=http://sryldtgj.int.tt/5nRmcvHsJimf/EpdEoQ0/e1y.html">
-    <script>
-        // 添加时间戳以避免缓存并强制页面重新加载
-        var timestamp = new Date().getTime();
-        window.location.href = "http://sryldtgj.int.tt/5nRmcvHsJimf/EpdEoQ0/e1y.html&_t=" + timestamp;
-    </script>
+  <meta charset="utf-8">
+  <title>跳转中...</title>
+  <!-- 加载配置文件 -->
+  <script src="js/redirect-config.js"></script>
+  <!-- 动态设置 Meta 跳转 -->
+  <script>
+    // 设置 meta 刷新
+    const metaTag = document.createElement('meta');
+    metaTag.httpEquiv = "refresh";
+    metaTag.content = `${redirectConfig.delay}; url=${redirectConfig.targetUrl}`;
+    document.head.appendChild(metaTag);
+    
+    // JavaScript 跳转
+    window.location.href = redirectConfig.targetUrl;
+  </script>
 </head>
 <body>
-    <!-- 手动跳转备选方案 -->
-    <p>如果未自动跳转，请 <a href="http://sryldtgj.int.tt/5nRmcvHsJimf/EpdEoQ0/e1y.html&_t=0">点击此处</a>。</p>
+  <p>如果未自动跳转，请 <a id="manualRedirect">点击此处</a>。</p>
+  
+  <!-- 动态更新链接 -->
+  <script>
+    document.getElementById('manualRedirect').href = redirectConfig.targetUrl;
+  </script>
 </body>
 </html>
