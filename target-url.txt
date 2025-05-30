@@ -1,1 +1,1 @@
-http://test.jinshufeng.cn:8080/profile/upload/2025/05/25/2_20250525005137A001.html?token=aHZwdnswIyFxZ2VicCt2LA5BRUtEUkEAU1wbQA5UWVM6IGsVKxknBT4qJwd3a2tqWFZdX19cW1lIQFoeDBcQ
+http://admin-api.shuyishuer.cn:8082/profile/upload/2025/05/27/f3e95ac6-b10f-4969-a3f1-1240a71d016e.html?token=aHZwdnswIyF4cXVlcGIqbg5PSUpFWEgAU1wbUwlTCl0nK2sAAyYnfwEaDmZ3a2tqWFdTVFteWF1CS1oeDBcQ
