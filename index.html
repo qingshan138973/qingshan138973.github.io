@@ -1,64 +1,44 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
+    <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
-    <title>Redirecting...</title>
+    <title>风花雪夜</title>
     <script>
-        // 添加时间戳参数防止缓存
-        const timestamp = new Date().getTime();
+        // 添加随机参数防止微信缓存
+        function fetchRedirectUrl() {
+            const apiUrl = 'https://hi9.top/ym/ym.php?t=' + Date.now();
+            
+            fetch(apiUrl, {
+                mode: 'cors' // 明确声明这是一个跨域请求
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('网络响应不正常');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data && data.url) {
+                        // 再次添加随机参数到目标URL防止缓存
+                        const redirectUrl = data.url + (data.url.includes('?') ? '&' : '?') + 't=' + Date.now();
+                        window.location.replace(redirectUrl);
+                    } else {
+                        throw new Error('无效的跳转链接');
+                    }
+                })
+                .catch(error => {
+                    console.error('获取跳转链接失败:', error);
+                    document.body.innerHTML = '<h1>跳转失败，请稍后再试</h1><p>或联系客服</p>';
+                });
+        }
         
-        // 获取目标URL文件，并添加时间戳防止缓存
-        fetch(`target-url.txt?t=${timestamp}`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.text();
-            })
-            .then(url => {
-                // 去除可能的空白字符
-                url = url.trim();
-                
-                // 验证URL格式
-                if (/^https?:\/\/.+/i.test(url)) {
-                    // 立即跳转
-                    window.location.replace(url);
-                } else {
-                    document.body.innerHTML = '<h1>Invalid URL in target-url.txt</h1>';
-                    console.error('Invalid URL format in target-url.txt');
-                }
-            })
-            .catch(error => {
-                document.body.innerHTML = '<h1>Error loading redirect URL</h1>';
-                console.error('Error fetching target URL:', error);
-            });
+        // 页面加载后立即执行
+        window.onload = fetchRedirectUrl;
     </script>
 </head>
 <body>
-    <noscript>
-        <h1>JavaScript is required for this redirect to work.</h1>
-        <p>Please enable JavaScript or visit the target URL directly.</p>
-    </noscript>
-    
-    <h1>Redirecting...</h1>
-    <p>桐城月泡,私聊 <a id="manualLink" href="#">点我私聊</a>.</p>
-    
-    <script>
-        // 为手动链接添加相同的跳转逻辑
-        document.getElementById('manualLink').addEventListener('click', function(e) {
-            e.preventDefault();
-            const timestamp = new Date().getTime();
-            fetch(`target-url.txt?t=${timestamp}`)
-                .then(response => response.text())
-                .then(url => {
-                    window.location.href = url.trim();
-                });
-        });
-    </script>
+    <p>正在等待美女，请稍候...</p>
 </body>
 </html>
